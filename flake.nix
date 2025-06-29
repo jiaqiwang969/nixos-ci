@@ -24,11 +24,36 @@
         inputs.self.nixosModules.my-github-runners
         {
           nixpkgs.hostPlatform = "aarch64-linux";
-          fileSystems."/" = { device = "/dev/sda"; fsType = "ext"; };
+          
+          # 硬件配置
+          boot.initrd.availableKernelModules = [ "xhci_pci" "nvme" "sr_mod" ];
+          boot.initrd.kernelModules = [ ];
+          boot.kernelModules = [ ];
+          boot.extraModulePackages = [ ];
+
+          # 文件系统
+          fileSystems."/" = {
+            device = "/dev/disk/by-uuid/1e6551fb-6c11-44ed-bb46-f33886b51787";
+            fsType = "ext4";
+          };
+
+          fileSystems."/boot" = {
+            device = "/dev/disk/by-uuid/2343-C9B0";
+            fsType = "vfat";
+            options = [ "fmask=0022" "dmask=0022" ];
+          };
+
+          swapDevices = [ ];
+
+          # 网络配置
+          networking.useDHCP = true;
+
+          # 引导配置
           boot.loader = {
             systemd-boot.enable = true;
             efi.canTouchEfiVariables = true;
           };
+          
           services.openssh.enable = true;
           system.stateVersion = "24.05";
         }
