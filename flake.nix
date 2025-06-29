@@ -54,7 +54,21 @@
             efi.canTouchEfiVariables = true;
           };
           
+          # 用户管理
+          users.users.root.hashedPassword = null;  # 允许无密码 root（仅用于紧急情况）
+          users.users.nixos = {
+            isNormalUser = true;
+            extraGroups = [ "wheel" "networkmanager" ];
+            initialPassword = "nixos";  # 首次登录后请修改
+          };
+          
+          # 基本服务
+          services.getty.autologinUser = "nixos";  # 自动登录（可选）
           services.openssh.enable = true;
+          
+          # 网络管理
+          networking.networkmanager.enable = true;
+          
           system.stateVersion = "24.05";
         }
       ];
