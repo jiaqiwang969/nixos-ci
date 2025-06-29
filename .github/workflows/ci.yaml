@@ -1,0 +1,14 @@
+name: "CI"
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  nix:
+    runs-on: aarch64-linux
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build with nixci
+        run: nixci --extra-access-tokens "github.com=${{ secrets.GITHUB_TOKEN }}" build --systems "aarch64-linux"
