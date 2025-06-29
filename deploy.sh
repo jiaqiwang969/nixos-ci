@@ -20,14 +20,14 @@ echo "1. 检查flake配置..."
 nix flake check
 
 echo "2. 预览将要部署的配置..."
-nix build .#nixosConfigurations.example.config.system.build.toplevel --dry-run
+nix build .#nixosConfigurations.nixos-ci.config.system.build.toplevel --dry-run
 
 echo "3. 部署配置..."
 echo "注意: 这将修改系统配置，请确认继续"
 read -p "确认部署? [y/N]: " -n 1 -r
 echo
 if [[ $REPLY =~ ^[Yy]$ ]]; then
-    sudo nixos-rebuild switch --flake .#example
+    sudo nixos-rebuild switch --flake .#nixos-ci
     echo "部署完成!"
     echo
     echo "现在可以检查GitHub仓库设置页面查看runner状态:"

@@ -1,95 +1,77 @@
 {
+  description = "NixOS configuration for CI runners";
+
   inputs = {
+    # Nixpkgs
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.05";
+    
+    # Home manager
+    home-manager.url = "github:nix-community/home-manager/release-24.05";
+    home-manager.inputs.nixpkgs.follows = "nixpkgs";
+    
+    # Other dependencies
     nix-darwin.url = "github:LnL7/nix-darwin";
     ragenix.url = "github:yaxitech/ragenix";
     github-nix-ci.url = "github:juspay/github-nix-ci";
   };
-  outputs = inputs: {
-    nixosModules.my-github-runners = {
-      services.github-nix-ci = {
-        age.secretsDir = ./secrets;
-        personalRunners = {
-          "jiaqiwang969/nixos-ci".num = 1;
-        };
-        orgRunners = {
-        };
+
+  outputs = {
+    self,
+    nixpkgs,
+    home-manager,
+    ...
+  } @ inputs: let
+    inherit (self) outputs;
+  in {
+    # NixOS configuration entrypoint
+    # Available through 'nixos-rebuild --flake .#nixos-ci'
+    nixosConfigurations = {
+      nixos-ci = nixpkgs.lib.nixosSystem {
+        system = "aarch64-linux";
+        specialArgs = {inherit inputs outputs;};
+        modules = [
+          # 主要的 NixOS 配置文件
+          ./nixos/configuration.nix
+          
+          # Home Manager 作为 NixOS 模块
+          home-manager.nixosModules.home-manager
+          {
+            home-manager.useGlobalPkgs = true;
+            home-manager.useUserPackages = true;
+            home-manager.users.nixos = import ./home-manager/home.nix;
+            home-manager.extraSpecialArgs = {inherit inputs outputs;};
+          }
+        ];
       };
     };
 
-    nixosConfigurations.example = inputs.nixpkgs.lib.nixosSystem {
-      modules = [
-        inputs.ragenix.nixosModules.default
-        inputs.github-nix-ci.nixosModules.default
-        inputs.self.nixosModules.my-github-runners
-        {
-          nixpkgs.hostPlatform = "aarch64-linux";
-          
-          # 硬件配置
-          boot.initrd.availableKernelModules = [ "xhci_pci" "nvme" "sr_mod" ];
-          boot.initrd.kernelModules = [ ];
-          boot.kernelModules = [ ];
-          boot.extraModulePackages = [ ];
-
-          # 文件系统
-          fileSystems."/" = {
-            device = "/dev/disk/by-uuid/1e6551fb-6c11-44ed-bb46-f33886b51787";
-            fsType = "ext4";
-          };
-
-          fileSystems."/boot" = {
-            device = "/dev/disk/by-uuid/2343-C9B0";
-            fsType = "vfat";
-            options = [ "fmask=0022" "dmask=0022" ];
-          };
-
-          swapDevices = [ ];
-
-          # 引导配置
-          boot.loader = {
-            systemd-boot.enable = true;
-            efi.canTouchEfiVariables = true;
-          };
-          
-          # 用户管理
-          users.users.root.hashedPassword = null;  # 允许无密码 root（仅用于紧急情况）
-          users.users.nixos = {
-            isNormalUser = true;
-            extraGroups = [ "wheel" "networkmanager" ];
-            initialPassword = "nixos";  # 首次登录后请修改
-          };
-          
-          # 基本服务
-          services.getty.autologinUser = "nixos";  # 自动登录（可选）
-          services.openssh.enable = true;
-          
-          # 命令行界面配置
-          systemd.services."getty@tty1".enable = true;
-          systemd.services."getty@tty1".wantedBy = [ "multi-user.target" ];
-          
-          # 确保控制台输出
-          boot.kernelParams = [ "console=tty1" "console=ttyS0" ];
-          
-          # 禁用图形界面相关服务，专注命令行
-          systemd.defaultUnit = "multi-user.target";
-          
-          # 网络管理
-          networking.networkmanager.enable = true;
-          
-          system.stateVersion = "24.05";
-        }
-      ];
+    # Standalone home-manager configuration entrypoint
+    # Available through 'home-manager --flake .#nixos@nixos-ci'
+    homeConfigurations = {
+      "nixos@nixos-ci" = home-manager.lib.homeManagerConfiguration {
+        pkgs = nixpkgs.legacyPackages.aarch64-linux;
+        extraSpecialArgs = {inherit inputs outputs;};
+        modules = [./home-manager/home.nix];
+      };
     };
 
+    # Darwin configuration (保留原有的 macOS 配置)
     darwinConfigurations.example = inputs.nix-darwin.lib.darwinSystem {
       modules = [
         inputs.ragenix.darwinModules.default
         inputs.github-nix-ci.darwinModules.default
-        inputs.self.nixosModules.my-github-runners
         {
           nixpkgs.hostPlatform = "aarch64-darwin";
           networking.hostName = "example";
           services.nix-daemon.enable = true;
+          
+          services.github-nix-ci = {
+            age.secretsDir = ./secrets;
+            personalRunners = {
+              "jiaqiwang969/nixos-ci".num = 1;
+            };
+            orgRunners = { };
+          };
         }
       ];
     };
