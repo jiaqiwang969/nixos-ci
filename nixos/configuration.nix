@@ -13,7 +13,10 @@
     ./hardware-configuration.nix
     
     # GitHub CI Runner 配置
-    ./github-runner.nix
+    # ./github-runner.nix  # 暂时禁用，先让系统正常启动
+    
+    # 紧急修复配置
+    ./emergency-fix.nix
   ];
 
   # Nixpkgs 配置
@@ -86,15 +89,15 @@
   };
 
   # 命令行界面配置
-  services.getty.autologinUser = "nixos";  # 自动登录
-  systemd.services."getty@tty1".enable = true;
-  systemd.services."getty@tty1".wantedBy = [ "multi-user.target" ];
+  # services.getty.autologinUser = "nixos";  # 暂时禁用自动登录
+  # systemd.services."getty@tty1".enable = true;
+  # systemd.services."getty@tty1".wantedBy = [ "multi-user.target" ];
   
   # 确保控制台输出
-  boot.kernelParams = [ "console=tty1" ];
+  # boot.kernelParams = [ "console=tty1" ];
   
   # 使用命令行模式
-  systemd.defaultUnit = "multi-user.target";
+  # systemd.defaultUnit = "multi-user.target";
 
   # 系统状态版本
   system.stateVersion = "24.05";
