@@ -45,9 +45,6 @@
 
           swapDevices = [ ];
 
-          # 网络配置
-          networking.useDHCP = true;
-
           # 引导配置
           boot.loader = {
             systemd-boot.enable = true;
@@ -65,6 +62,16 @@
           # 基本服务
           services.getty.autologinUser = "nixos";  # 自动登录（可选）
           services.openssh.enable = true;
+          
+          # 命令行界面配置
+          systemd.services."getty@tty1".enable = true;
+          systemd.services."getty@tty1".wantedBy = [ "multi-user.target" ];
+          
+          # 确保控制台输出
+          boot.kernelParams = [ "console=tty1" "console=ttyS0" ];
+          
+          # 禁用图形界面相关服务，专注命令行
+          systemd.defaultUnit = "multi-user.target";
           
           # 网络管理
           networking.networkmanager.enable = true;
